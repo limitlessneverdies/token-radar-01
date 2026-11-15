@@ -3,29 +3,118 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token Radar: pre-token protocols ranked by implied value</title>
+<title>Token Launch Radar: pre-token protocols ranked by implied value</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <a class="skip" href="#board">Skip to the board</a>
-<header>
-<h1>Token Launch Radar</h1>
-<p id="summary">Loading…</p>
-<p class="model">Implied value = TVL × a base multiple calibrated per category from tokenized comps in this snapshot (median market-cap / TVL, clamped 0.05–0.80), × a 7-day growth multiplier, × a maturity multiplier. Pre-token means the snapshot records no token at all — no market cap, no CoinGecko id, no symbol. A protocol on the watchlist may still have a token its DefiLlama record does not carry; this board ranks what the snapshot records, nothing more.</p>
+<header class="masthead">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">◉</span>
+    <div>
+      <h1>Token Launch Radar</h1>
+      <p class="tagline">Pre-token DeFi protocols ranked by an implied launch value. The watchlist is the floor; the radar looks below it.</p>
+    </div>
+  </div>
+  <div class="snapshot" id="snapshot"></div>
 </header>
-<main>
-<section class="controls">
-<label>Filter <input id="q" type="search" placeholder="protocol, category or chain"></label>
-<label>Category <select id="cat"><option value="">All categories</option></select></label>
-<label><input id="watch" type="checkbox"> Watchlist only</label>
-</section>
-<section id="detail" aria-live="polite"><p>Click a row for its farm plan and model breakdown.</p></section>
-<table id="board">
-<thead><tr><th>#</th><th>Protocol</th><th>Category</th><th>Chains</th><th>TVL</th><th>7d</th><th>Implied value</th><th>Base ×</th></tr></thead>
-<tbody id="rows"></tbody>
-</table>
-<section id="live"><h2>Live tokens, for comparison</h2><p>These already trade, so the board shows the market's own market cap, never a model's value. The top 24 by market cap.</p><table><thead><tr><th>Protocol</th><th>Category</th><th>TVL</th><th>Market cap</th><th>7d</th></tr></thead><tbody id="live-rows"></tbody></table></section>
-</main>
+
+<div class="shell">
+  <aside class="rail">
+    <nav class="tabs" aria-label="Views">
+      <a href="#board" data-view="board"><strong>Board</strong><span>ranked radar</span></a>
+      <a href="#detail" data-view="detail"><strong>Detail</strong><span>one protocol</span></a>
+      <a href="#filter" data-view="filter"><strong>Filter</strong><span>narrow the board</span></a>
+      <a href="#live" data-view="live"><strong>Live</strong><span>market comparables</span></a>
+    </nav>
+    <section class="kpis" id="kpis" aria-label="Snapshot at a glance"></section>
+    <section class="model-card" id="model-card" aria-label="The model"></section>
+    <footer class="rail-foot">
+      <p>Deterministic: the snapshot, the model and this page. No fetch, no clock, no network.</p>
+      <p id="rail-source"></p>
+    </footer>
+  </aside>
+
+  <main>
+    <section id="view-board" class="view" aria-labelledby="board-title">
+      <div class="view-head">
+        <div>
+          <p class="eyebrow">Board</p>
+          <h2 id="board-title">Every protocol on the radar</h2>
+          <p id="board-lede" class="lede"></p>
+        </div>
+        <div class="legend">
+          <span class="pill watch">watchlist</span>
+          <span class="pill">pre-token</span>
+          <span class="pill ghost">click a row for detail</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="board">
+          <thead><tr><th class="num">#</th><th>Protocol</th><th>Category</th><th>Chains</th><th class="num">TVL</th><th class="num">7d</th><th class="num">Base ×</th><th class="num">Implied value</th></tr></thead>
+          <tbody id="board-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-detail" class="view" hidden aria-labelledby="detail-title">
+      <div id="detail-body"></div>
+    </section>
+
+    <section id="view-filter" class="view" hidden aria-labelledby="filter-title">
+      <div class="view-head">
+        <div>
+          <p class="eyebrow">Filter</p>
+          <h2 id="filter-title">Narrow the radar</h2>
+          <p class="lede">Text, category, chain, TVL floor and watchlist membership. The table and the count update together.</p>
+        </div>
+        <div id="filter-meta" class="filter-meta"></div>
+      </div>
+      <form id="filters" class="filters" autocomplete="off">
+        <label class="field grow">Search <input id="f-q" type="search" placeholder="protocol, category or chain"></label>
+        <label class="field">Category <select id="f-cat"><option value="">All categories</option></select></label>
+        <label class="field">Chain <select id="f-chain"><option value="">All chains</option></select></label>
+        <label class="field">TVL floor <select id="f-min"><option value="0">Any TVL</option><option value="10000000">$10M+</option><option value="50000000">$50M+</option><option value="100000000">$100M+</option><option value="500000000">$500M+</option></select></label>
+        <label class="field">Sort <select id="f-sort"><option value="implied">Implied value</option><option value="tvl">TVL</option><option value="growth">7-day change</option><option value="age">Age</option><option value="name">Name</option></select></label>
+        <label class="check"><input id="f-watch" type="checkbox"> Watchlist only</label>
+        <button id="f-reset" type="button" class="reset">Reset filters</button>
+      </form>
+      <div id="filter-chips" class="chips"></div>
+      <div class="table-wrap short">
+        <table class="board">
+          <thead><tr><th class="num">#</th><th>Protocol</th><th>Category</th><th>Chains</th><th class="num">TVL</th><th class="num">7d</th><th class="num">Base ×</th><th class="num">Implied value</th></tr></thead>
+          <tbody id="filter-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-live" class="view" hidden aria-labelledby="live-title">
+      <div class="view-head">
+        <div>
+          <p class="eyebrow">Live</p>
+          <h2 id="live-title">What the market already pays</h2>
+          <p class="lede">Token-bearing protocols, shown at their own market cap, never the model's value. The right-hand table is the calibration evidence: each category's median market-cap / TVL and the base multiple the board applies.</p>
+        </div>
+        <div class="legend"><span class="pill">market cap</span><span class="pill ghost">mcap / TVL</span></div>
+      </div>
+      <div class="live-grid">
+        <div class="table-wrap short">
+          <table class="board">
+            <thead><tr><th>Protocol</th><th>Category</th><th class="num">TVL</th><th class="num">Market cap</th><th class="num">mcap / TVL</th><th class="num">7d</th></tr></thead>
+            <tbody id="live-rows"></tbody>
+          </table>
+        </div>
+        <div class="table-wrap short">
+          <table class="board">
+            <thead><tr><th>Category calibration</th><th class="num">Comps</th><th class="num">Median</th><th class="num">Base</th><th>Source</th></tr></thead>
+            <tbody id="category-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
 <script src="../data.js"></script>
 <script src="app.js"></script>
 </body>

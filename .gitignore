@@ -1,0 +1,6 @@
+# local run artifacts — the grader writes its own /output
+/output/
+/out-*/
+/shots-test/
+/.chrome-*/
+/transcripts*.tar.gz

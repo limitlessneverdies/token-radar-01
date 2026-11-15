@@ -1,18 +1,20 @@
-// Token Launch Radar — make.fun token-radar-01 entry (Node 22, stdlib only).
+// Token Launch Radar: make.fun token-radar-01 entry (Node 22, stdlib only).
 //
-// Reads the sealed snapshot from /input/snapshot.json (or --input <file|dir>),
-// scores every pre-token protocol with the model in lib/model.ts, writes
-// the ranked board to /output/board.json, writes the dashboard data as
-// /output/data.js, copies dashboard/ and screenshots/ to /output, and
-// writes /output/dossier.json with the vendored make.fun library.
+// The program reads the sealed snapshot from /input/snapshot.json (or
+// --input <file|dir>), scores every pre-token protocol with the model in
+// lib/model.ts, writes the ranked board to /output/board.json, writes the
+// dashboard's data beside the page as /output/data.js, copies this
+// repository's dashboard/ and screenshots/ to /output, and writes
+// /output/dossier.json with the vendored make.fun library.
 //
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input <kit>/input/snapshot.json
+// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
+//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input ../input/snapshot.json
 //
-// The board covers the whole 40-protocol watchlist plus the 160 largest
-// pre-token protocols below the $50M floor, 200 rows. The model calibrates
-// its base multiple per category from tokenized comps in the snapshot
-// itself (median market-cap / TVL), instead of one fixed multiple for
-// every category. See lib/model.ts.
+// The board covers every slug in the watchlist plus the largest pre-token
+// subjects below the $50M floor. The model calibrates one base multiple per
+// category from the snapshot's own tokenized comps (median market cap / TVL),
+// falling back to the global median when a category has fewer than three.
+// Nothing here reads a clock, the network or a random source.
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,10 +24,12 @@ import { buildDossier } from './vendor/makefun-board.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
+/** The scorer's caps: the text cap shapes the dossier, the rest refuse. */
 const TEXT_MAX_BYTES = 65_536;
 const SCREENSHOT_CAPS = { max: 4, max_bytes: 524_288 };
 const IMAGE_NAME = /^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$/;
 
+/** --name <value> out of the arguments, or the fallback. */
 function arg(name: string, fallback: string): string {
   const at = process.argv.indexOf(`--${name}`);
   if (at >= 0 && at + 1 < process.argv.length) return process.argv[at + 1]!;
@@ -53,6 +57,7 @@ mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'board.json'), `${JSON.stringify({ rows: board })}\n`);
 writeFileSync(join(out, 'data.js'), dataScript(radar));
 
+/** Copy one directory's regular files into `to`, skipping names that start with a dot. */
 function copyFiles(from: string, to: string): string[] {
   if (!existsSync(from)) return [];
   mkdirSync(to, { recursive: true });
@@ -67,7 +72,7 @@ function copyFiles(from: string, to: string): string[] {
   return copied;
 }
 
-copyFiles(join(here, 'dashboard'), join(out, 'dashboard'));
+const dashboard = copyFiles(join(here, 'dashboard'), join(out, 'dashboard'));
 const shots = copyFiles(join(here, 'screenshots'), join(out, 'screenshots'));
 if (shots.length < 3) {
   process.stderr.write(`token radar: screenshots/ holds ${shots.length} image${shots.length === 1 ? '' : 's'}: hand in 3, the board, a detail view and a filtered view\n`);
@@ -80,9 +85,20 @@ for (const name of shots) {
   }
 }
 
-writeFileSync(join(out, 'dossier.json'), buildDossier(out, { text_max_bytes: TEXT_MAX_BYTES, screenshots: SCREENSHOT_CAPS, dashboard: { max_files: 400, max_bytes: 4_194_304 } }));
+// The dossier is written last: the scorer rebuilds it from this /output and compares bytes.
+writeFileSync(
+  join(out, 'dossier.json'),
+  buildDossier(out, {
+    text_max_bytes: TEXT_MAX_BYTES,
+    screenshots: SCREENSHOT_CAPS,
+    dashboard: { max_files: 400, max_bytes: 4_194_304 },
+  }),
+);
 
+const top = board[0]!;
+const categories = radar.categories.filter((c) => c.source === 'category').length;
 process.stdout.write(
   `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored (${radar.early_size} early, ${radar.live_size} live set aside)\n` +
-    `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')}, ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')}\n`,
+    `token radar: ${categories} categories calibrated from their own comps, global base ${radar.model.global_base} over ${radar.model.global_comps} comps; top row #1 ${top.name} at $${top.implied_value_usd.toLocaleString('en-US')}\n` +
+    `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (${dashboard.length} files), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')} (${statSync(join(out, 'dossier.json')).size} bytes)\n`,
 );
