@@ -37,6 +37,9 @@ node cli/makefun.mjs bundle \
 
 `bundle --dry-run` finds the session, the typed opening prompt, the system prompt in-session, one instruction file (`pi/settings.json`) and no MCP servers. The bundle redacts home paths, usernames, e-mail addresses and credentials on its own.
 
-## Submission
+## Submission status
 
-The entry is ready to push and submit. Remaining work is the site-side flow: create/push `limitlessneverdies/token-radar-01`, run the kit pre-submit `check` with the bundle, then `submit` with the account's API key and signing wallet through the kit's secure flow. The API key is never written to the repository or a command line.
+- The repository is public at `https://github.com/limitlessneverdies/token-radar-01` and the entry commits are pushed to `main`.
+- The kit pre-submit `check` was run against the repository and the transcript bundle: **13 passed, 0 failed, 6 skipped**, and all five site-side checks (public, owner, created after the opening, commit pushed, distinct snapshot) are satisfied by the pushed public repository under `limitlessneverdies`.
+- `transcripts.tar.gz` is the bundle built by the command above; it is a local upload artifact and is gitignored, not committed.
+- The only remaining step is the signed `submit` call with the account's API key and wallet, through the kit's secure flow. The API key is never written to the repository or a command line.
