@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar: pre-token protocols ranked by implied value</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<a class="skip" href="#board">Skip to the board</a>
+<header>
+<h1>Token Launch Radar</h1>
+<p id="summary">Loading…</p>
+<p class="model">Implied value = TVL × a base multiple calibrated per category from tokenized comps in this snapshot (median market-cap / TVL, clamped 0.05–0.80), × a 7-day growth multiplier, × a maturity multiplier. Pre-token means the snapshot records no token at all — no market cap, no CoinGecko id, no symbol. A protocol on the watchlist may still have a token its DefiLlama record does not carry; this board ranks what the snapshot records, nothing more.</p>
+</header>
+<main>
+<section class="controls">
+<label>Filter <input id="q" type="search" placeholder="protocol, category or chain"></label>
+<label>Category <select id="cat"><option value="">All categories</option></select></label>
+<label><input id="watch" type="checkbox"> Watchlist only</label>
+</section>
+<section id="detail" aria-live="polite"><p>Click a row for its farm plan and model breakdown.</p></section>
+<table id="board">
+<thead><tr><th>#</th><th>Protocol</th><th>Category</th><th>Chains</th><th>TVL</th><th>7d</th><th>Implied value</th><th>Base ×</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+<section id="live"><h2>Live tokens, for comparison</h2><p>These already trade, so the board shows the market's own market cap, never a model's value. The top 24 by market cap.</p><table><thead><tr><th>Protocol</th><th>Category</th><th>TVL</th><th>Market cap</th><th>7d</th></tr></thead><tbody id="live-rows"></tbody></table></section>
+</main>
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
